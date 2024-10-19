@@ -34,7 +34,7 @@ $$
 $$
 
 ### Case 2
-Let \( a \in \mathbb{R} \) and \( b > 0 \). The equation is:
+Let $$\( a \in \mathbb{R} \)$$ and $$\( b > 0 \)$$. The equation is:
 
 $$
 \left(\partial_t^2 - a^2 \nabla^2 + b \right)\psi(x,t) = 0, \quad (x,t) \in [0, 4] \times [0,T],
