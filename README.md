@@ -97,24 +97,23 @@ and the boundary conditions are:
 
 ## Lid-driven cavity: corrected version (`lid_driven_cavity/`)
 
-The cavity section of `PINNS.ipynb` had several problems, fixed in [`lid_driven_cavity/Lid_Driven_Cavity_PINN.ipynb`](lid_driven_cavity/Lid_Driven_Cavity_PINN.ipynb):
+[`lid_driven_cavity/Lid_Driven_Cavity_PINN.ipynb`](lid_driven_cavity/Lid_Driven_Cavity_PINN.ipynb) solves the steady lid-driven cavity problem with a PINN:
 
-- The PINN takes only $(x, y)$, so it solves the **steady** equations, but its finite-difference reference stopped at $t = 0.7$, which is still transient. The reference is now run to steady state ($t \approx 5.9$).
-- The **continuity equation** $u_x + v_y = 0$ was missing from the loss, so the velocity field was never forced to be divergence-free. The loss is now x-momentum + y-momentum + continuity.
-- The two top corners were in both the lid set ($u = 1$) and the side-wall sets ($u = 0$). They now belong only to the walls.
-- 101 boundary points per wall (was 10) with a boundary-loss weight of 10; the learning-rate schedule is actually used; training finishes with **L-BFGS** after Adam.
+- The network maps $(x, y) \mapsto (u, v, p)$ and is trained on the steady x-momentum, y-momentum and **continuity** ($u_x + v_y = 0$) equations, with no-slip walls, a moving lid ($u = 1$) and the pressure boundary conditions of the reference solver.
+- The lid's two corner points are assigned to the side walls only, so no point is trained toward two different velocities.
+- 101 boundary points per wall with a boundary-loss weight of 10; Adam with a decaying learning rate, followed by **L-BFGS**.
+- The reference is a 41×41 finite-difference (projection) solution run to **steady state** ($t \approx 5.9$).
 
-Steady case, $\rho = 1$, $\nu = 0.1$ ($Re = 20$), compared with a 41×41 finite-difference solution at steady state (relative L2 error, interior points):
+Results for $\rho = 1$, $\nu = 0.1$ ($Re = 20$), relative L2 error against the steady finite-difference solution:
 
-| | u | v | p | u on centerline x = 1 | v on centerline y = 1 |
+| | u (interior) | v (interior) | p (interior) | u on centerline x = 1 | v on centerline y = 1 |
 |---|---|---|---|---|---|
-| Original PINN | 1.19 | 1.32 | 1.27 | 0.95 | 1.29 |
-| Corrected PINN, Adam only | 0.40 | 0.73 | 0.97 | 0.24 | 0.73 |
-| Corrected PINN, Adam + L-BFGS | 0.21 | 0.40 | 0.49 | 0.17 | 0.42 |
+| PINN, Adam only | 0.40 | 0.73 | 0.97 | 0.24 | 0.73 |
+| PINN, Adam + L-BFGS | 0.21 | 0.40 | 0.49 | 0.17 | 0.42 |
 
-The original network does not form the cavity vortex at all; the corrected one does, and the L-BFGS stage roughly halves the error left by Adam. The remaining error is concentrated at the lid corners, where the velocity jumps from 1 to 0 and the pressure is singular.
+The L-BFGS stage roughly halves the error left by Adam and moves the primary vortex close to its position in the reference. The remaining error is concentrated at the lid corners, where the velocity jumps from 1 to 0 and the pressure is singular.
 
 ![centerline velocities](lid_driven_cavity/figures/centerline_velocities.png)
 ![streamlines](lid_driven_cavity/figures/streamlines.png)
 
-The notebook loads the trained weights in `lid_driven_cavity/weights/` by default; set `TRAIN = True` to retrain. `train_original.py` retrains the original network from `PINNS.ipynb` for the comparison.
+The notebook loads the trained weights in `lid_driven_cavity/weights/` by default; set `TRAIN = True` to retrain.
